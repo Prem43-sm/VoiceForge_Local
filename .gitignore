@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+.env
+
+# PyInstaller
+dist/
+build/
+*.spec
+
+# Data
+data/models/*
+data/voice_packs/*
+data/outputs/*
+data/cache/*
+data/logs/*.log
+data/voiceforge.db
+!data/models/.gitkeep
+!data/voice_packs/.gitkeep
+!data/outputs/.gitkeep
+!data/cache/.gitkeep
+!data/logs/.gitkeep
+
+# pytest cache
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

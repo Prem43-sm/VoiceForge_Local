@@ -1,0 +1,38 @@
+[app]
+name = "VoiceForge Local"
+version = "0.1.0"
+debug = false
+
+[paths]
+model_dir = "data/models"
+voice_pack_dir = "data/voice_packs"
+output_dir = "data/outputs"
+cache_dir = "data/cache"
+log_dir = "data/logs"
+db_path = "data/voiceforge.db"
+
+[api]
+host = "127.0.0.1"
+port = 8765
+require_token = false
+api_token = ""
+
+[gpu]
+prefer_cuda = true
+low_vram_mode = false
+half_precision = false
+
+[engine]
+default_engine = "primary"
+model_id = ""
+model_revision = ""
+
+[audio]
+sample_rate = 24000
+channels = 1
+output_format = "wav"
+
+[logging]
+level = "INFO"
+max_file_size_mb = 10
+backup_count = 5

@@ -1,0 +1,2 @@
+[console_scripts]
+voiceforge = app.cli.main:main

@@ -1,0 +1,1540 @@
+CODEx MASTER PROMPT — FREE LOCAL VOICE PACK BUILDER
+
+PROJECT NAME
+
+VoiceForge Local — Offline Voice Clone & Reusable Voice Pack Studio
+
+OBJECTIVE
+
+Build a complete, production-minded, FREE, LOCAL Windows PC application
+that lets a user provide one or more authorized voice recordings
+(MP3/WAV/M4A/FLAC where supported), process them, create a reusable
+voice profile/voice pack, and then use that voice pack from other AI
+projects to synthesize speech locally.
+
+The core idea is:
+
+    INPUT AUDIO
+        ↓
+    AUDIO VALIDATION
+        ↓
+    PREPROCESSING / CLEANING
+        ↓
+    VOICE MODEL / SPEAKER EMBEDDING
+        ↓
+    VOICE PACK CREATION
+        ↓
+    SAVE VOICE PACK
+        ↓
+    FUTURE PROJECT
+        ↓
+    TEXT → VOICE PACK → WAV/MP3
+
+The application must NOT depend on paid cloud APIs for its core
+functionality. It must work locally after models/dependencies have been
+downloaded.
+
+IMPORTANT LEGAL / SAFETY REQUIREMENT
+
+The application must only be used to clone or reproduce voices that the
+user has permission/authorization to use. The UI must clearly state this
+requirement.
+
+Do NOT design the application around impersonating a real person without
+permission, bypassing platform safeguards, fraud, deception, identity
+theft, or evading voice-authentication systems.
+
+Do not market or label the feature as an “exact celebrity voice copier.”
+Instead, call it a voice-cloning / voice-reproduction system and clearly
+distinguish authorized voice cloning from fictional voice design.
+
+The application may support arbitrary user-provided voices technically,
+but it must include an authorization confirmation before creating a
+voice pack:
+
+“I confirm that I own this voice recording or have permission to
+reproduce this speaker’s voice.”
+
+Store this acknowledgement in the voice-pack metadata.
+
+PROJECT TARGET
+
+Primary OS: - Windows 10/11 64-bit
+
+Primary hardware: - NVIDIA GPU preferred - CUDA-capable GPU preferred -
+CPU fallback required
+
+The developer must make the software usable on a laptop with
+approximately: - 16 GB RAM - NVIDIA RTX-class GPU with 6 GB VRAM -
+modern Intel/AMD CPU - SSD
+
+The software must detect available hardware and automatically select a
+suitable inference configuration.
+
+FREE / LOCAL FIRST
+
+No paid API should be required.
+
+Do not require: - OpenAI API - ElevenLabs API - Google Cloud TTS - Azure
+TTS - paid voice-cloning services - remote inference servers
+
+Internet may be required ONCE to download open-source models and Python
+packages.
+
+After models are installed, the core cloning and synthesis pipeline
+should work offline.
+
+If a model requires an online service, it must NOT be the primary
+backend.
+
+ARCHITECTURE
+
+Use a modular architecture so the voice engine can be replaced later.
+
+Recommended conceptual layers:
+
+1.  Desktop UI
+2.  Project manager
+3.  Audio ingestion
+4.  Audio preprocessing
+5.  Voice cloning engine
+6.  Voice embedding / speaker representation
+7.  TTS synthesis engine
+8.  Voice pack manager
+9.  Local inference API
+10. CLI
+11. Cache manager
+12. Model manager
+13. Diagnostics / logs
+14. Export/import system
+
+Suggested stack:
+
+Frontend: - PySide6
+
+Backend: - Python 3.10 or 3.11 depending on model compatibility
+
+Audio: - FFmpeg - librosa where appropriate - soundfile - torchaudio
+where compatible - numpy
+
+ML: - PyTorch - Hugging Face ecosystem where compatible - selected
+open-source local TTS/voice-cloning model
+
+Packaging: - PyInstaller initially - optional installer later
+
+Do NOT hard-code the entire project around one TTS model.
+
+Create an engine abstraction:
+
+    VoiceEngine
+        ├── EngineA
+        ├── EngineB
+        ├── EngineC
+        └── FutureEngine
+
+MODEL STRATEGY
+
+The application must distinguish between two fundamentally different
+approaches:
+
+A. ZERO-SHOT / FEW-SHOT VOICE CLONING
+
+The model uses a short reference recording to reproduce the speaker
+characteristics without training a new neural network from scratch.
+
+This should be the default MVP approach because it is much faster and
+more practical for a local desktop application.
+
+The Codex implementation should investigate and integrate a suitable
+free/open-source local model such as: - XTTS-v2 or another compatible
+Coqui-family implementation if licensing/runtime compatibility permits -
+F5-TTS or another compatible open-source voice cloning model -
+Chatterbox or another compatible open-source local TTS model - OpenVoice
+or another compatible voice-conversion/TTS model
+
+Do NOT blindly install every model.
+
+Pick ONE primary model that: - supports local inference - supports
+reference-speaker cloning - works on Windows - has a clear open-source
+license - has manageable VRAM requirements - supports the desired
+language(s), especially Hindi/English where possible
+
+Add other engines only through the plugin interface.
+
+The Codex agent must verify model license, supported languages, Windows
+compatibility, Python/PyTorch compatibility, and GPU requirements before
+selecting the default engine.
+
+B. FULL MODEL TRAINING / FINE-TUNING
+
+This is optional and should NOT be required for the MVP.
+
+The UI may later support training/fine-tuning a dedicated speaker model
+using a larger authorized dataset.
+
+Do not pretend that a 5-second MP3 can train a high-quality neural TTS
+model from scratch.
+
+Explain in the UI:
+
+-   Short reference audio → speaker-conditioned / zero-shot cloning
+-   Larger clean dataset → optional fine-tuning
+-   More clean and diverse speech → generally better speaker consistency
+
+VOICE PACK CONCEPT
+
+The most important feature is the reusable VOICE PACK.
+
+A voice pack is NOT simply one WAV file.
+
+It should be a directory containing everything needed to identify and
+reuse the voice.
+
+Example:
+
+voice_packs/ └── jarvis_style_demo/ ├── voicepack.json ├──
+speaker_embedding.bin ├── reference_audio/ │ ├── reference_01.wav │ └──
+reference_02.wav ├── preview/ │ └── preview.wav ├── metadata/ │ ├──
+source_info.json │ └── preprocessing.json ├── engine/ │ └──
+engine_config.json └── README.txt
+
+If the selected engine needs additional model-specific assets, store
+them under:
+
+    engine_assets/
+
+Do not duplicate huge base model files into every voice pack unless
+absolutely necessary.
+
+The voice pack should reference a locally installed base model by
+ID/version.
+
+VOICEPACK.JSON
+
+Design a stable schema.
+
+Example conceptual structure:
+
+{ “voicepack_version”: “1.0”, “id”: “unique-voice-id”, “name”: “My
+Voice”, “display_name”: “My Voice”, “created_at”: “…”, “updated_at”:
+“…”, “language”: [“hi”, “en”], “engine”: { “id”: “primary-engine”,
+“version”: “…”, “model_id”: “…”, “model_revision”: “…” }, “speaker”: {
+“embedding_file”: “speaker_embedding.bin”, “reference_files”: [
+“reference_audio/reference_01.wav” ] }, “audio_profile”: {
+“sample_rate”: 24000, “channels”: 1 }, “preprocessing”: {
+“noise_reduction”: true, “silence_trim”: true, “normalization”: true },
+“authorization”: { “confirmed”: true, “confirmation_text”: “…”,
+“confirmed_at”: “…” } }
+
+Keep the schema extensible.
+
+VOICE PACK PORTABILITY
+
+A voice pack must be portable.
+
+Provide:
+
+Export Voice Pack Import Voice Pack Duplicate Voice Pack Rename Voice
+Pack Delete Voice Pack Backup Voice Pack Restore Voice Pack
+
+Use a ZIP-based format:
+
+    .voicepack
+
+Internally:
+
+    voicepack.json
+    embeddings/
+    reference_audio/
+    preview/
+    engine/
+    metadata/
+
+The import system must validate: - schema version - required files -
+model compatibility - checksums - corrupted files
+
+If a required base model is missing, show:
+
+“Voice pack imported successfully, but the required inference model is
+not installed.”
+
+Then provide an “Install Required Model” action.
+
+AUDIO INPUT
+
+Accept:
+
+-   MP3
+-   WAV
+-   FLAC
+-   M4A/AAC if FFmpeg supports it
+-   OGG if supported
+
+Drag-and-drop must work.
+
+Allow: - one file - multiple files - folder import
+
+For each file show: - filename - duration - sample rate - channels -
+codec - file size - estimated quality - clipping status - silence
+percentage - speech percentage
+
+AUDIO QUALITY ANALYSIS
+
+Before creating a voice pack, analyze:
+
+1.  Duration
+2.  Sample rate
+3.  Channel count
+4.  RMS loudness
+5.  Peak level
+6.  Clipping
+7.  Silence ratio
+8.  Noise estimate
+9.  Speech ratio
+10. SNR estimate where practical
+11. DC offset
+12. extremely low/high volume
+13. duplicate/near-duplicate recordings
+
+Give a quality score:
+
+    0–39  Poor
+    40–59 Fair
+    60–74 Good
+    75–89 Very Good
+    90–100 Excellent
+
+Do not claim the score is scientifically definitive. It is an
+engineering heuristic.
+
+PREPROCESSING PIPELINE
+
+Create a non-destructive preprocessing pipeline.
+
+Typical stages:
+
+1.  Decode using FFmpeg
+2.  Convert to mono
+3.  Resample to model-required sample rate
+4.  Remove leading/trailing silence
+5.  Detect long internal silences
+6.  Normalize loudness
+7.  Optional gentle denoising
+8.  Optional dereverberation
+9.  Detect clipping
+10. Segment speech
+11. Remove unusable segments
+12. Generate clean reference clips
+
+Do NOT aggressively process audio.
+
+Over-processing can damage speaker identity.
+
+Keep: - original input - processed audio - generated reference
+
+separate.
+
+REFERENCE AUDIO SELECTION
+
+If multiple files are provided, rank them.
+
+Prefer: - clean speech - minimal background noise - little reverb -
+natural speaking - varied phonemes - stable microphone characteristics -
+no music - no overlapping speakers
+
+Reject or warn on: - music - movie dialogue with effects - heavy
+background noise - multiple people speaking - extreme compression -
+distorted audio - very short non-speech audio
+
+Do not automatically include every uploaded file in the final speaker
+reference.
+
+Let the user manually select references.
+
+VOICE PACK CREATION WIZARD
+
+Create a step-by-step wizard:
+
+STEP 1 — Welcome - Create Voice Pack - Import existing Voice Pack
+
+STEP 2 — Authorization - Required checkbox - Explain authorized use
+
+STEP 3 — Add Audio - Drag/drop - Browse files - Folder import
+
+STEP 4 — Analyze - quality reports - waveform - duration - speech
+detection
+
+STEP 5 — Clean - preprocessing controls
+
+STEP 6 — Select Reference - choose best clips - preview
+
+STEP 7 — Choose Engine - available local engines - VRAM requirement -
+language support
+
+STEP 8 — Create Voice Pack - generate embedding / speaker
+representation - create metadata - generate preview
+
+STEP 9 — Test Voice Text box:
+
+    "Hello. This is a test of my local AI voice."
+
+Buttons: - Generate - Stop - Regenerate - Save WAV - Save MP3
+
+STEP 10 — Finish - voice pack path - API usage example - CLI usage
+example
+
+VOICE LIBRARY
+
+Main screen should show cards:
+
+Voice Name Language Engine Created Quality Preview Status
+
+Actions: - Use - Test - Edit - Export - Duplicate - Delete
+
+Add search and filtering.
+
+TTS PLAYGROUND
+
+Provide a page where the user can enter arbitrary text.
+
+Controls:
+
+Voice: [Voice Pack dropdown]
+
+Language: [Auto / Hindi / English / supported languages]
+
+Speed: 0.5x → 2.0x
+
+Pitch: model-dependent
+
+Temperature / expressiveness: model-dependent
+
+Seed: optional if supported
+
+Output: WAV / MP3
+
+Generate button
+
+Save button
+
+Playback button
+
+Queue generation.
+
+Do not expose advanced model parameters unless the selected engine
+supports them.
+
+LANGUAGE SUPPORT
+
+The architecture must support multilingual TTS.
+
+At minimum design the system so Hindi and English can be supported where
+the chosen engine supports them.
+
+Allow language codes such as:
+
+hi en hi-IN en-IN
+
+Do not fake language support.
+
+If a model cannot synthesize Hindi, clearly display:
+
+“This engine does not support Hindi.”
+
+VOICE CONSISTENCY
+
+Add a “Consistency Mode” where practical.
+
+If the engine supports deterministic generation: - seed - temperature -
+sampling settings
+
+should be stored.
+
+Allow:
+
+High Consistency Balanced Expressive
+
+Translate these presets into model-specific settings.
+
+LOCAL API
+
+This is critical.
+
+The application must provide a local HTTP API so future AI projects can
+use the voice pack.
+
+Default:
+
+    http://127.0.0.1:8765
+
+Example endpoint:
+
+POST /api/v1/tts
+
+Request:
+
+{ “voice_id”: “my-voice”, “text”: “Namaste. System ready.”, “language”:
+“hi”, “output_format”: “wav”, “speed”: 1.0 }
+
+Response:
+
+{ “success”: true, “audio_url”: “/api/v1/audio/…”, “request_id”: “…” }
+
+Prefer returning the generated audio bytes or a local file path
+depending on the API design.
+
+Add:
+
+GET /api/v1/voices GET /api/v1/voices/{id} POST
+/api/v1/voices/{id}/synthesize DELETE /api/v1/jobs/{id} GET
+/api/v1/health GET /api/v1/models GET /api/v1/status
+
+SECURITY: - bind to 127.0.0.1 by default - do not expose LAN access by
+default - optional API token - configurable port - request size limits -
+rate limiting optional - safe file path handling
+
+PYTHON SDK
+
+Create a tiny client package for other projects.
+
+Example:
+
+from voiceforge_client import VoiceForge
+
+vf = VoiceForge(“http://127.0.0.1:8765”)
+
+audio = vf.speak( voice=“my-voice”, text=“Namaste. Main aapki madad ke
+liye taiyar hoon.”, language=“hi” )
+
+audio.save(“output.wav”)
+
+Also support:
+
+vf.list_voices() vf.voice_exists(“my-voice”) vf.health()
+
+CLI
+
+Provide:
+
+voiceforge list-voices voiceforge create-voice voiceforge analyze-audio
+voiceforge test voiceforge speak voiceforge export voiceforge import
+voiceforge models voiceforge doctor voiceforge server
+
+Example:
+
+voiceforge speak
+–voice my-voice
+–text “System ready.”
+–output output.wav
+
+Windows PowerShell syntax must be documented correctly.
+
+LOCAL SERVER MODE
+
+Allow:
+
+voiceforge server
+
+The desktop application should also have:
+
+[Start Local API] [Stop Local API]
+
+Display:
+
+API Status: RUNNING Address: 127.0.0.1:8765
+
+MODEL MANAGER
+
+Create a model manager.
+
+Show: - Model name - Version - License - Languages - Size - Installed -
+VRAM recommendation - Status
+
+Actions: - Install - Remove - Verify - Update - Set Default
+
+Do not automatically download models without user confirmation.
+
+MODEL CACHE
+
+Store large base models in a central cache.
+
+Example:
+
+data/ └── models/ ├── primary_engine/ └── …
+
+Voice packs should reference the model instead of copying it.
+
+CONFIGURATION
+
+Use a config file such as:
+
+config/config.toml
+
+Store: - model directory - voice pack directory - output directory -
+cache directory - API host - API port - logging level - GPU preference -
+default engine - default output format
+
+Do not store secrets in source code.
+
+DATABASE
+
+SQLite is recommended.
+
+Tables:
+
+voices models voice_references synthesis_jobs settings logs
+
+Voice pack files remain portable on disk; database acts as an index.
+
+Do not make the entire application unusable if the SQLite index is
+deleted.
+
+Rebuild the index from voice-pack directories.
+
+PROJECT STRUCTURE
+
+Use a clean structure similar to:
+
+voiceforge-local/ │ ├── app/ │ ├── main.py │ ├── config/ │ ├── core/ │
+├── audio/ │ ├── voices/ │ ├── engines/ │ ├── api/ │ ├── cli/ │ ├──
+database/ │ ├── ui/ │ ├── models/ │ ├── jobs/ │ └── utils/ │ ├── data/ │
+├── models/ │ ├── voice_packs/ │ ├── outputs/ │ ├── cache/ │ └── logs/ │
+├── scripts/ │ ├── setup_windows.ps1 │ ├── doctor.py │ └──
+download_model.py │ ├── tests/ ├── docs/ ├── requirements/ ├── README.md
+├── LICENSE ├── pyproject.toml └── .gitignore
+
+Keep UI code separate from inference code.
+
+Do not put all logic inside main.py.
+
+HARDWARE DETECTION
+
+At startup detect:
+
+-   CPU
+-   RAM
+-   GPU
+-   VRAM
+-   CUDA availability
+-   PyTorch version
+-   FFmpeg
+-   model availability
+
+Show a diagnostic screen.
+
+Example:
+
+CPU: Intel Core i5 RAM: 16 GB GPU: NVIDIA RTX VRAM: 6 GB CUDA: Available
+FFmpeg: Installed Primary TTS Model: Installed
+
+If CUDA is unavailable: - offer CPU mode - warn that synthesis may be
+slower
+
+Do not crash just because CUDA is unavailable.
+
+VRAM MANAGEMENT
+
+For GPUs with limited VRAM:
+
+-   use inference mode
+-   use half precision where safely supported
+-   unload unused models
+-   clear CUDA cache between large jobs when appropriate
+-   avoid loading multiple large models simultaneously
+-   expose a low-VRAM mode
+
+If a model cannot run on the detected GPU, show a useful explanation and
+recommend a compatible engine/configuration.
+
+NO TRAINING BY DEFAULT
+
+Do not accidentally start model training when the user wants a voice
+pack.
+
+The default workflow must be:
+
+reference audio → speaker conditioning/embedding → synthesis
+
+Training/fine-tuning should be a separate advanced module.
+
+TRAINING MODULE — OPTIONAL FUTURE
+
+Design interfaces for:
+
+Dataset creation Dataset validation Training configuration Checkpoint
+management Evaluation Model export
+
+Potential dataset structure:
+
+dataset/ ├── wavs/ ├── metadata.csv └── README.md
+
+Metadata should include:
+
+filename|transcription
+
+But do not implement training unless it can be done reliably with the
+selected open-source engine.
+
+AUDIO OUTPUT
+
+Support:
+
+WAV MP3
+
+Prefer WAV as the internal master output.
+
+Use FFmpeg or a suitable library for MP3 encoding.
+
+Allow: - 16-bit PCM - 24-bit PCM where appropriate - model-native sample
+rate
+
+Do not repeatedly lossy-compress audio.
+
+BATCH SYNTHESIS
+
+Allow a text file:
+
+lines.txt
+
+Example:
+
+Hello. System ready. Good morning. Your task is complete.
+
+Generate:
+
+001.wav 002.wav 003.wav 004.wav
+
+Show progress and allow cancel.
+
+Also support CSV:
+
+id,text
+
+Output:
+
+id.wav
+
+JOB QUEUE
+
+Implement a background job system so UI never freezes.
+
+States:
+
+QUEUED RUNNING COMPLETED FAILED CANCELLED
+
+Show: - progress - elapsed time - estimated remaining time where
+meaningful - GPU/CPU status
+
+ERROR HANDLING
+
+Never display raw Python traceback as the only error.
+
+Convert errors into useful messages.
+
+Examples:
+
+“CUDA is unavailable. Switching to CPU mode.”
+
+“Reference audio contains multiple speakers.”
+
+“Selected model does not support Hindi.”
+
+“Insufficient VRAM.”
+
+“FFmpeg is missing.”
+
+“Voice pack is corrupted.”
+
+“Model files are incomplete.”
+
+“Audio is too noisy for reliable cloning.”
+
+Include a “Show Technical Details” expandable section.
+
+LOGGING
+
+Write:
+
+data/logs/app.log
+
+Use rotating logs.
+
+Levels: DEBUG INFO WARNING ERROR CRITICAL
+
+Never log: - API keys - passwords - unnecessary private text - full
+sensitive user audio contents
+
+Do not upload user audio anywhere.
+
+PRIVACY
+
+Make this a local-first application.
+
+Default: - no telemetry - no analytics - no cloud upload - no background
+network calls except explicitly initiated model downloads
+
+Display a privacy statement:
+
+“Your audio remains on this computer unless you explicitly export or
+move it.”
+
+SECURE FILE HANDLING
+
+Prevent: - path traversal - arbitrary file deletion - unsafe archive
+extraction - overwriting files outside application directories
+
+Validate imported .voicepack ZIP entries.
+
+Do not trust metadata filenames blindly.
+
+VOICE PACK IDENTIFIERS
+
+Generate stable IDs.
+
+Example:
+
+vf_8f2d3c1a
+
+Do not use full speaker names in filesystem IDs if unnecessary.
+
+Allow friendly display names.
+
+PREVIEW SYSTEM
+
+When a voice pack is created, automatically generate a short preview.
+
+Use a neutral phrase, for example:
+
+“Hello. This is a voice profile test.”
+
+Do not automatically generate misleading statements claiming to be
+another real person.
+
+WAVEFORM / SPECTROGRAM
+
+UI should optionally show:
+
+-   waveform
+-   spectrogram
+-   duration
+-   RMS
+-   peak
+
+Use efficient rendering.
+
+Do not load huge audio files completely into memory if avoidable.
+
+AUDIO SEGMENTATION
+
+For long recordings:
+
+-   split into manageable chunks
+-   detect speech regions
+-   avoid cutting in the middle of words
+-   preserve natural speech boundaries
+
+Use VAD where appropriate.
+
+Allow manual segment selection.
+
+DUPLICATE DETECTION
+
+Hash original files.
+
+Also optionally detect near duplicates using audio fingerprints.
+
+Do not unnecessarily process the same audio twice.
+
+CACHING
+
+Cache:
+
+-   decoded audio
+-   preprocessed audio
+-   speaker embeddings
+-   generated outputs
+
+Cache key should depend on: - input checksum - preprocessing config -
+model ID/version - engine settings
+
+If any relevant parameter changes, invalidate the appropriate cache.
+
+REPRODUCIBILITY
+
+Store: - model version - model revision - preprocessing settings -
+synthesis settings - application version
+
+A generated output should have enough metadata to reproduce it when
+practical.
+
+OPTIONAL OUTPUT METADATA
+
+For each generated file, optionally create:
+
+output.wav.json
+
+containing:
+
+voice_id engine model language text hash settings timestamp
+
+Do not store full text unless the user enables it.
+
+UI DESIGN
+
+Create a modern dark desktop interface.
+
+Suggested navigation:
+
+Dashboard Voices Create Voice TTS Studio Batch Models API Settings Logs
+About
+
+Use a professional, minimal design.
+
+Do NOT make it look like a generic AI dashboard overloaded with cards.
+
+The primary action should be obvious.
+
+DASHBOARD
+
+Show:
+
+Installed Voice Packs Installed Models GPU Status API Status Recent Jobs
+Storage Usage
+
+VOICE CREATION PAGE
+
+Large drop zone:
+
+“Drop MP3/WAV files here”
+
+Then:
+
+Audio files Quality analysis Reference selection Engine Create Voice
+Pack
+
+TTS STUDIO
+
+Large text editor.
+
+Controls underneath.
+
+Audio player at bottom.
+
+Add “Copy API Code” button.
+
+CODE EXAMPLES
+
+Generate documentation automatically for:
+
+Python JavaScript/Node.js cURL PowerShell
+
+Example Python:
+
+import requests
+
+payload = { “voice_id”: “my_voice”, “text”: “Namaste, system ready.”,
+“language”: “hi”, “output_format”: “wav” }
+
+r = requests.post( “http://127.0.0.1:8765/api/v1/tts”, json=payload )
+
+with open(“output.wav”, “wb”) as f: f.write(r.content)
+
+Make the actual API implementation match the documented behavior.
+
+PLUGIN ENGINE INTERFACE
+
+Define an abstract interface approximately:
+
+class VoiceEngine: id: str name: str
+
+    def capabilities(self):
+        ...
+
+    def load_model(self):
+        ...
+
+    def unload_model(self):
+        ...
+
+    def create_voice_profile(self, references, options):
+        ...
+
+    def synthesize(self, text, voice_profile, options):
+        ...
+
+    def validate_voice_profile(self, voice_profile):
+        ...
+
+    def estimate_resources(self):
+        ...
+
+This allows future engines.
+
+ENGINE CAPABILITY OBJECT
+
+Each engine should report:
+
+languages sample_rates supports_zero_shot supports_finetuning
+supports_streaming supports_pitch supports_speed min_vram
+recommended_vram license offline
+
+UI uses this information dynamically.
+
+STREAMING
+
+Optional advanced feature.
+
+If engine supports streaming, API may provide:
+
+POST /api/v1/tts/stream
+
+Return audio chunks.
+
+Do not implement fake streaming by generating the entire file first and
+pretending it is streaming.
+
+MVP PRIORITY
+
+Implement in this order:
+
+PHASE 1 - project setup - PySide6 shell - config - logging - hardware
+detection - FFmpeg integration
+
+PHASE 2 - audio import - analysis - preprocessing - waveform
+
+PHASE 3 - primary local zero-shot voice-cloning engine - voice profile
+creation - TTS synthesis
+
+PHASE 4 - voice-pack storage - import/export - voice library
+
+PHASE 5 - TTS Studio - batch generation
+
+PHASE 6 - local REST API - Python SDK - CLI
+
+PHASE 7 - model manager - diagnostics - packaging
+
+PHASE 8 - optional advanced engines - optional training/fine-tuning
+
+DO NOT implement all advanced features first.
+
+The application must have a working end-to-end MVP before expansion.
+
+ACCEPTANCE TEST
+
+The final application must pass this workflow:
+
+1.  Launch application.
+2.  Detect GPU/CPU.
+3.  Create a new voice pack.
+4.  Accept an MP3.
+5.  Analyze audio.
+6.  Preprocess audio.
+7.  Create voice profile.
+8.  Save voice pack.
+9.  Generate preview.
+10. Enter Hindi text.
+11. Generate speech.
+12. Play speech.
+13. Save WAV.
+14. Export .voicepack.
+15. Close application.
+16. Reopen application.
+17. Voice pack still appears.
+18. Generate speech again.
+19. Start local API.
+20. Call API from a separate Python script.
+21. Receive audio.
+22. Verify no cloud API was needed.
+
+PERFORMANCE ACCEPTANCE
+
+Do not promise real-time performance.
+
+Measure actual: - model load time - synthesis time - real-time factor -
+peak RAM - peak VRAM
+
+Show these metrics in diagnostics.
+
+For example:
+
+Generation time: 8.2 s Audio duration: 6.0 s RTF: 1.37
+
+Define:
+
+RTF = generation_time / audio_duration
+
+Lower is faster.
+
+TESTING
+
+Create tests for:
+
+-   config loading
+-   voice-pack validation
+-   audio metadata
+-   preprocessing
+-   path safety
+-   ZIP import
+-   API schema
+-   voice CRUD
+-   model detection
+
+Create integration tests for: - audio → voice profile - voice profile →
+synthesis - API → synthesis
+
+Where GPU is unavailable, tests should mock the inference engine.
+
+DOCTOR COMMAND
+
+Implement:
+
+voiceforge doctor
+
+Check:
+
+Python PyTorch FFmpeg CUDA GPU VRAM model files permissions directories
+database API port
+
+Output:
+
+PASS WARN FAIL
+
+with solutions.
+
+INSTALLATION
+
+Create:
+
+setup_windows.ps1
+
+It should:
+
+1.  verify Python version
+2.  create virtual environment
+3.  install dependencies
+4.  verify FFmpeg
+5.  verify PyTorch
+6.  optionally install GPU-compatible PyTorch build
+7.  create directories
+8.  initialize database
+9.  run doctor
+
+Do not silently replace system Python.
+
+Provide manual installation instructions too.
+
+DEPENDENCY MANAGEMENT
+
+Pin versions where required for reproducibility.
+
+Separate:
+
+core requirements GPU requirements optional engine requirements
+development requirements
+
+Avoid dependency conflicts between different TTS engines.
+
+If two engines require incompatible versions, isolate them using
+optional environments or subprocess-based workers rather than breaking
+the main application.
+
+SUBPROCESS ENGINE OPTION
+
+For incompatible engines, allow:
+
+Main App ↓ Engine Worker Process ↓ Model
+
+The main app communicates through IPC or localhost.
+
+This prevents one model dependency from corrupting the whole
+application.
+
+PACKAGING
+
+First support source execution.
+
+Then create:
+
+dist/ └── VoiceForgeLocal/ ├── VoiceForgeLocal.exe └── …
+
+Use PyInstaller carefully.
+
+Large ML models should NOT necessarily be bundled inside the executable.
+
+Provide a separate model installer/cache.
+
+Documentation must explain where models are stored.
+
+LICENSE TRACKING
+
+Create:
+
+docs/MODEL_LICENSES.md
+
+For every bundled or downloadable model document: - model name -
+source - license - attribution requirements - commercial-use limitations
+if any
+
+Do not combine code licenses and model licenses incorrectly.
+
+README
+
+README must contain:
+
+1.  What is VoiceForge Local?
+2.  Features
+3.  Supported OS
+4.  Hardware requirements
+5.  Installation
+6.  First voice pack
+7.  TTS usage
+8.  API usage
+9.  CLI usage
+10. Voice-pack format
+11. Offline/privacy
+12. Model licenses
+13. Troubleshooting
+14. Limitations
+15. Responsible use
+
+IMPORTANT LIMITATIONS
+
+Clearly explain:
+
+-   Voice cloning quality depends on reference audio and model.
+-   Very short audio may produce unstable results.
+-   Background noise can affect cloning.
+-   Some languages may not be supported by every engine.
+-   A voice pack is not necessarily a full neural model.
+-   Base models remain separate from voice profiles.
+-   CPU inference can be slow.
+-   Different engines produce different voice characteristics.
+
+DO NOT CLAIM: “Any 3-second MP3 gives perfect cloning.”
+
+Instead say:
+
+“Short references may work with compatible zero-shot models, but longer
+clean speech generally provides better and more stable speaker
+representation.”
+
+RESPONSIBLE USE UI
+
+Before first use, display:
+
+“Voice cloning can be used to reproduce a person’s vocal identity. Only
+create or use voice profiles when you have permission from the speaker
+or otherwise have lawful authorization. Do not use this software for
+fraud, impersonation, deception, harassment, or bypassing identity
+verification.”
+
+Require confirmation.
+
+For each voice pack metadata, store:
+
+authorization.confirmed = true
+
+and timestamp.
+
+Do not attempt to verify the user’s legal status automatically.
+
+Do not provide functionality specifically intended to defeat voice
+biometrics.
+
+JARVIS / FICTIONAL VOICE USE CASE
+
+The application may be used to create a fictional AI-assistant voice
+with a deep, calm, cinematic style.
+
+Do NOT provide a built-in unauthorized clone of a real actor or
+celebrity.
+
+Instead provide voice design controls where the selected engine supports
+them: - speaking rate - pitch - expressiveness - style - pauses
+
+A fictional “AI assistant” preset may contain generic characteristics
+such as:
+
+Deep Calm Formal Precise Slightly synthetic
+
+without claiming to reproduce a specific actor.
+
+FUTURE FEATURES
+
+Architect for:
+
+-   wake-word integration
+-   Vosk/STT integration
+-   local LLM integration
+-   Ollama integration
+-   WebSocket API
+-   streaming TTS
+-   voice conversion
+-   emotion/style controls
+-   pronunciation dictionary
+-   SSML-like controls
+-   subtitle generation
+-   audiobook batch generation
+-   multi-voice dialogue
+-   project-specific voice presets
+
+Do not implement these before the MVP works.
+
+PRONUNCIATION DICTIONARY
+
+Allow user-defined replacements.
+
+Example:
+
+{ “JARVIS”: “JAR-vis”, “GPU”: “G P U” }
+
+Do not alter source text permanently.
+
+Use a preprocessing layer:
+
+original text ↓ pronunciation normalization ↓ TTS
+
+Keep original text in job metadata only if the user enables it.
+
+PAUSE / PERFORMANCE MARKUP
+
+If supported by the selected engine, optionally support:
+
+[PAUSE 500ms]
+
+[EMPHASIS]
+
+[SLOW]
+
+But do not invent unsupported SSML.
+
+Translate these controls into engine-specific parameters.
+
+If unsupported, disable them.
+
+NO HIDDEN NETWORK
+
+The application must not silently upload: - reference audio - generated
+audio - user text - voice embeddings
+
+to third-party services.
+
+Any network request must be explicit and documented.
+
+DEFAULT NETWORK POLICY: - localhost allowed - model downloads only when
+user initiates - no telemetry
+
+SOURCE CODE QUALITY
+
+Use: - type hints - dataclasses where appropriate - Pydantic for API
+models where appropriate - structured logging - docstrings - clear
+naming - modular classes - dependency injection where useful - unit
+tests
+
+Avoid: - giant functions - global mutable state - hard-coded paths -
+hard-coded model IDs throughout the code - duplicated preprocessing
+logic - UI directly calling model internals
+
+UI must communicate with services.
+
+EXAMPLE SERVICE LAYER
+
+AudioService VoicePackService ModelService SynthesisService JobService
+ApiService SettingsService
+
+The UI calls these services.
+
+FINAL DELIVERABLES
+
+Codex must produce:
+
+1.  Complete source code
+2.  README.md
+3.  setup_windows.ps1
+4.  requirements files
+5.  pyproject.toml
+6.  .gitignore
+7.  tests
+8.  model manager
+9.  desktop GUI
+10. voice-pack system
+11. local REST API
+12. CLI
+13. Python SDK
+14. doctor utility
+15. model license documentation
+16. responsible-use documentation
+17. sample voice-pack schema
+18. API examples
+19. troubleshooting guide
+
+Do not leave critical functions as TODO.
+
+If a feature cannot be implemented because a selected model does not
+support it, implement a clean capability check and a graceful fallback.
+
+CODEx EXECUTION RULES
+
+You are the coding agent responsible for implementing this project.
+
+Before writing large amounts of code:
+
+1.  Inspect the repository.
+2.  Determine whether an existing project exists.
+3.  Preserve useful existing code unless it conflicts with the
+    architecture.
+4.  Create a clear implementation plan.
+5.  Select the primary TTS engine based on:
+    -   free/open-source availability
+    -   local inference
+    -   Windows compatibility
+    -   Hindi/English support
+    -   VRAM requirements
+    -   license compatibility
+    -   maintenance status
+6.  Document why the engine was selected.
+7.  Build the MVP end-to-end.
+8.  Run tests.
+9.  Run doctor.
+10. Fix errors.
+11. Test with CPU fallback.
+12. Test with GPU when available.
+13. Test voice-pack export/import.
+14. Test API from a separate process.
+15. Update README.
+
+Do not ask the user to manually implement obvious missing pieces.
+
+If an external model download is necessary, create an explicit model
+installation command and documentation rather than embedding proprietary
+model files.
+
+MODEL SELECTION DECISION
+
+At implementation time, do NOT assume that the first model mentioned in
+this specification is automatically the best model.
+
+Compare at least 2–3 viable free local open-source candidates.
+
+Create a short internal comparison using:
+
+-   License
+-   Hindi support
+-   English support
+-   zero-shot cloning
+-   reference audio requirements
+-   VRAM
+-   CPU support
+-   Windows compatibility
+-   quality
+-   speed
+-   ease of integration
+-   community/maintenance
+
+Then select ONE primary engine for the MVP.
+
+The codebase must keep the engine abstraction so another model can be
+added later.
+
+IMPORTANT: do not download multiple huge models by default.
+
+FIRST-RUN EXPERIENCE
+
+After installation:
+
+Launch VoiceForge Local.
+
+Show:
+
+Welcome to VoiceForge Local
+
+“Create a reusable local voice profile from authorized recordings and
+use it across your own AI projects.”
+
+Buttons:
+
+[Create Voice Pack] [Import Voice Pack] [Open TTS Studio]
+
+Then detect hardware.
+
+If no model is installed:
+
+“Install a local TTS engine to continue.”
+
+Button:
+
+[Open Model Manager]
+
+SAMPLE PROJECT
+
+Include a small example:
+
+examples/ └── simple_tts/ ├── main.py └── README.md
+
+main.py:
+
+from voiceforge_client import VoiceForge
+
+vf = VoiceForge()
+
+result = vf.speak( voice=“my_voice”, text=“Namaste. System ready.”,
+language=“hi” )
+
+result.save(“hello.wav”)
+
+Also include:
+
+examples/ └── local_llm_assistant/
+
+showing how an AI assistant could generate text and send it to
+VoiceForge.
+
+Do not require a specific paid AI provider.
+
+SUCCESS CRITERIA
+
+The project is considered successful only when a normal user can:
+
+1.  Install it on Windows.
+2.  Open the GUI.
+3.  Add an authorized MP3.
+4.  Analyze and preprocess it.
+5.  Create a voice pack.
+6.  Save the voice pack.
+7.  Close the app.
+8.  Reopen the app.
+9.  Select the voice pack.
+10. Enter Hindi/English text supported by the engine.
+11. Generate speech locally.
+12. Play the result.
+13. Export WAV/MP3.
+14. Start the local API.
+15. Call the API from another program.
+16. Use the same voice pack in another project.
+17. Export/import the voice pack on another compatible installation.
+
+FINAL CODEx RESPONSE
+
+When implementation is complete, report:
+
+-   What was built
+-   Primary engine selected
+-   Why it was selected
+-   Supported languages
+-   GPU requirements
+-   CPU fallback status
+-   Installation command
+-   How to create a voice pack
+-   How to synthesize speech
+-   API address
+-   CLI examples
+-   Test results
+-   Known limitations
+-   Files created/changed
+
+Do not claim perfect voice cloning.
+
+The final result should be a clean, maintainable, free, local-first
+Windows application that turns authorized reference recordings into
+reusable voice profiles and exposes them as a practical local TTS
+service for future AI projects.

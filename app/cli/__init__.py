@@ -1,0 +1,1 @@
+"""CLI entry point for VoiceForge Local."""
